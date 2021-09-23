@@ -2,7 +2,7 @@ import { validateHorizontalPosition } from '@angular/cdk/overlay';
 import { Component, OnInit } from '@angular/core';
 import {FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FilmesService } from 'src/app/core/filmes.service';
 import { AlertaComponent } from 'src/app/shared/components/alerta/alerta.component';
 import { ValidarCamposService } from 'src/app/shared/components/campos/validar-campos.service';
@@ -15,7 +15,7 @@ import { Filme } from 'src/app/shared/models/filme';
   styleUrls: ['./cadastro-filmes.component.scss']
 })
 export class CadastroFilmesComponent implements OnInit {
-
+  id: number;
   cadastro: FormGroup;
   generos: Array<string>;
 
@@ -23,6 +23,7 @@ export class CadastroFilmesComponent implements OnInit {
               public dialog: MatDialog,
               private fb: FormBuilder,
               private filmeService: FilmesService,
+              private activatedRoute: ActivatedRoute,
               private router: Router              
               ) { }
 
@@ -31,19 +32,26 @@ export class CadastroFilmesComponent implements OnInit {
   }
 
   ngOnInit() {
-
-    this.cadastro = this.fb.group({
-      titulo: ['',[Validators.required, Validators.minLength(2), Validators.maxLength(256)]],
-      urlFoto: ['',[Validators.minLength(10)]],
-      dtLancamento: ['',[Validators.required]],
-      descricao: [''],
-      nota : [0, [Validators.required, Validators.min(0), Validators.max(10)]],
-      urlIMDB: ['', [Validators.minLength(10)]],
-      genero: ['',[Validators.required]]
-    });
-
+    this.id = this.activatedRoute.snapshot.params['id'];
+    if (this.id){
+      this.filmeService.visualizar(this.id).subscribe((filme: Filme)=> this.criarFormulario(filme));
+    }
+    else {
+      this.criarFormulario(this.criarFilmeEmBranco());
+    }
     this.generos = ['Ação','Aventura','Comedia','Terror','Ficção Cientifica','Comedia','Drama'];
+  }
 
+  private criarFormulario(filme: Filme): void {
+    this.cadastro = this.fb.group({
+      titulo: [filme.titulo,[Validators.required, Validators.minLength(2), Validators.maxLength(256)]],
+      urlFoto: [filme.urlFoto,[Validators.minLength(10)]],
+      dtLancamento: [filme.dtLancamento,[Validators.required]],
+      descricao: [filme.descricao],
+      nota : [filme.nota, [Validators.required, Validators.min(0), Validators.max(10)]],
+      urlIMDB: [filme.urlIMDb, [Validators.minLength(10)]],
+      genero: [filme.genero,[Validators.required]]
+    });
   }
 
   submit (): void {
@@ -89,6 +97,19 @@ export class CadastroFilmesComponent implements OnInit {
       };
       this.dialog.open(AlertaComponent, config);
     });
+  }
+
+  private criarFilmeEmBranco(): Filme {
+    return {
+      id: null,
+      titulo: null,
+      dtLancamento: null,
+      urlFoto: null,
+      descricao: null,
+      nota: null,
+      urlImdb: null,
+      genero: null
+    } as Filme;
   }
 
 }
